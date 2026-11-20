@@ -341,19 +341,32 @@ async function zatwierdz() {
   catch (e) { info(e.message, 5000); zatwierdzam = false; $('btn-glowny').disabled = $('btn-anuluj').disabled = false; return; }
   zatwierdzam = false;
   $('btn-anuluj').disabled = false;
+  // Od razu pokaż posiłek na karcie (wstępnie), a resztę dociągnij, gdy automat skończy.
+  const sz = stan.szacunek;
+  const k = karty[d] || pustaKarta(d);
+  if (!(k.posilki || []).some((p) => p.id === id)) {
+    k.posilki = [...(k.posilki || []), { id, godzina: sz.godzina || stan.godzina, nazwa: sz.nazwa, opis: sz.opis, ...sz.suma,
+      pewnosc: sz.pewnosc, zdjecia: sz.zdjecia || [] }];
+    k.suma = Object.fromEntries(['kcal', 'b', 'w', 't'].map((x) => [x, (k.suma?.[x] || 0) + (sz.suma[x] || 0)]));
+  }
+  karty[d] = k;
   zamknijDodaj();
-  przeliczam = true; rysuj();
-  info('Zapisuję i przeliczam kartę dnia…');
+  przeliczam = true; rysuj(d === dzis());
+  info('Zapisane. Przeliczam kartę…');
   const start = Date.now();
-  while (Date.now() - start < 5 * 60 * 1000) {
+  let posilekJest = false;
+  while (Date.now() - start < 4 * 60 * 1000) {
     await czekaj(5000);
-    const k = await plik(`karty/${d}.json`).catch(() => null);
-    if (k && (k.posilki || []).some((p) => p.id === id)) {
-      przeliczam = false; karty[d] = k; zapamietaj(); rysuj(d === dzis()); info('Karta przeliczona', 2500); return;
-    }
+    const nowa = await plik(`karty/${d}.json`).catch(() => null);
+    if (!nowa || !(nowa.posilki || []).some((p) => p.id === id)) continue;
+    const komentarzGotowy = nowa.komentarz_posilkow === nowa.posilki.length;
+    if (!posilekJest || komentarzGotowy) { przeliczam = false; karty[d] = nowa; zapamietaj(); rysuj(); }
+    posilekJest = true;
+    if (komentarzGotowy) { info('Komentarz zaktualizowany', 2500); return; }
+    info('Karta przeliczona. Piszę komentarz…');
   }
   przeliczam = false;
-  info('Przeliczanie trwa dłużej niż zwykle — odśwież aplikację za chwilę.', 6000);
+  info(posilekJest ? '' : 'Przeliczanie trwa dłużej niż zwykle — odśwież aplikację za chwilę.', 6000);
 }
 
 async function anuluj() {
