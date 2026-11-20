@@ -122,7 +122,7 @@ function rysujDzien(k, i, ile) {
     : `<span class="stan">dzień zamknięty</span><h1>${esc(kom.tytul || 'Podsumowanie dnia')}</h1></div>`;
 
   if (!c) {
-    h += `<div class="pusto">Na dziś nie ma jeszcze karty.<br>Dodaj pierwszy posiłek — cel i komentarz pojawią się po przeliczeniu.</div>`;
+    h += `<div class="pusto">${przeliczam ? 'Przeliczam kartę po pierwszym posiłku — to potrwa ok. minuty.' : 'Na dziś nie ma jeszcze karty.<br>Dodaj pierwszy posiłek — cel i komentarz pojawią się po przeliczeniu.'}</div>`;
     return h;
   }
 
@@ -184,6 +184,7 @@ function rysujDzien(k, i, ile) {
 }
 
 let obserwator;
+let przeliczam = false;
 function rysuj(przewinNaKoniec) {
   const dzisiaj = dzis();
   if (!karty[dzisiaj]) karty[dzisiaj] = pustaKarta(dzisiaj);
@@ -298,6 +299,7 @@ async function dodajPliki(lista) {
 }
 
 async function wyslij() {
+  if (stan.czeka) return;
   if (!stan.id) stan.id = idTeraz();
   const nonce = Math.random().toString(36).slice(2);
   stan.czeka = 'Wysyłam zdjęcia…'; rysujDodaj();
@@ -329,20 +331,28 @@ async function wyslij() {
   stan.czeka = false; rysujDodaj();
 }
 
+let zatwierdzam = false;
 async function zatwierdz() {
+  if (zatwierdzam) return;                 // drugie stuknięcie nie wysyła drugiego zgłoszenia
+  zatwierdzam = true;
+  $('btn-glowny').disabled = $('btn-anuluj').disabled = true;
   const id = stan.id, d = stan.szacunek.data || stan.data;
   try { await zgloszenie(`zatwierdz ${id}`); }
-  catch (e) { info(e.message, 5000); return; }
+  catch (e) { info(e.message, 5000); zatwierdzam = false; $('btn-glowny').disabled = $('btn-anuluj').disabled = false; return; }
+  zatwierdzam = false;
+  $('btn-anuluj').disabled = false;
   zamknijDodaj();
+  przeliczam = true; rysuj();
   info('Zapisuję i przeliczam kartę dnia…');
   const start = Date.now();
   while (Date.now() - start < 5 * 60 * 1000) {
     await czekaj(5000);
     const k = await plik(`karty/${d}.json`).catch(() => null);
     if (k && (k.posilki || []).some((p) => p.id === id)) {
-      karty[d] = k; zapamietaj(); rysuj(d === dzis()); info('Karta przeliczona', 2500); return;
+      przeliczam = false; karty[d] = k; zapamietaj(); rysuj(d === dzis()); info('Karta przeliczona', 2500); return;
     }
   }
+  przeliczam = false;
   info('Przeliczanie trwa dłużej niż zwykle — odśwież aplikację za chwilę.', 6000);
 }
 
