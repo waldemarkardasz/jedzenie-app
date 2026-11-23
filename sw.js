@@ -1,7 +1,7 @@
 /* Service worker aplikacji Jedzenie: trzyma w telefonie samą powłokę.
  * Danych nie dotyka — zapytania do GitHuba przechodzą obok niego,
  * a ostatnie karty aplikacja przechowuje sama. */
-const PAMIEC = 'jedzenie-powloka-v3';
+const PAMIEC = 'jedzenie-powloka-v4';
 const POWLOKA = ['./', './index.html', './app.js', './manifest.webmanifest', './ikona-192.png', './ikona-512.png'];
 
 self.addEventListener('install', (e) => {

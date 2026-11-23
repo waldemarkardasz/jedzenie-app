@@ -106,8 +106,18 @@ function makro(nazwa, zj, cel, kolor, dopisek) {
     <div class="tor">${tor}</div>${pod}</div>`;
 }
 
+function nasycone(zj, limit) {
+  if (zj == null || !limit) return '';
+  const pct = zj / limit, ponad = pct > 1;
+  const w = ponad ? Math.round(100 / pct) : Math.round(pct * 100);
+  return `<div class="makro" style="margin:-4px 0 0 14px;padding-left:12px;border-left:2px solid #2E3440;gap:6px">
+    <div class="rzad"><span style="font-size:12.5px;font-weight:600;color:#D5DAE1">w tym nasycone</span><span style="font-size:12.5px;font-weight:700">${liczba(zj)} <span>/ limit ${liczba(limit)} g</span></span></div>
+    <div class="tor" style="height:6px">${ponad ? `<div style="width:${w}%;background:#8E6A9A"></div><div style="width:${100 - w}%;background:#F07D6B"></div>` : `<div style="width:${w}%;background:#8E6A9A;border-radius:4px"></div>`}</div>
+    <span class="pod" style="color:${ponad ? '#F07D6B' : pct >= 0.8 ? '#E8A33D' : '#9BA3B0'}">${ponad ? `+${liczba(zj - limit)} g ponad limit` : `zostało ${liczba(limit - zj)} g do limitu`}</span></div>`;
+}
+
 function chipy(o) {
-  return `<div class="chipy"><span class="chip cb">B ${liczba(o.b)} g</span><span class="chip cw">W ${liczba(o.w)} g</span><span class="chip ct">T ${liczba(o.t)} g</span></div>`;
+  return `<div class="chipy"><span class="chip cb">B ${liczba(o.b)} g</span><span class="chip cw">W ${liczba(o.w)} g</span><span class="chip ct">T ${liczba(o.t)} g${o.tn != null ? ` · nas. ${liczba(o.tn)}` : ''}</span></div>`;
 }
 
 function rysujDzien(k, i, ile) {
@@ -146,7 +156,7 @@ function rysujDzien(k, i, ile) {
   h += `<div class="kafel"><span class="et">Makroskładniki</span>
     ${makro('Białko', s.b, c.b, '#8FB8F0', `${(c.b / 79).toFixed(1).replace('.', ',')} g/kg`)}
     ${makro('Węglowodany', s.w, c.w, '#E8A33D')}
-    ${makro('Tłuszcz', s.t, c.t, '#C99BDB')}</div>`;
+    ${makro('Tłuszcz', s.t, c.t, '#C99BDB')}${nasycone(s.tn, c.tn)}</div>`;
 
   // komentarz
   if (kom.komentarz) {
@@ -171,7 +181,7 @@ function rysujDzien(k, i, ile) {
       h += `<div class="posilek"><div class="miniatura" data-zdj="${esc((p.zdjecia || [])[0] || '')}">${IK_APARAT}</div>
         <div class="info"><div class="rzad"><b>${esc(p.nazwa)}</b><b>${liczba(p.kcal)} <span style="font-size:11px;font-weight:500" class="szary">kcal</span></b></div>
         <div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px" class="szary">${esc(p.godzina)}</span>${p.pewnosc === 'niska' ? '<span class="pewnosc">PEWNOŚĆ NISKA</span>' : ''}</div>
-        <span class="co">${esc(p.opis)}</span><span class="mak">B ${liczba(p.b)} · W ${liczba(p.w)} · T ${liczba(p.t)}</span></div></div>`;
+        <span class="co">${esc(p.opis)}</span><span class="mak">B ${liczba(p.b)} · W ${liczba(p.w)} · T ${liczba(p.t)}${p.tn != null ? ` (nas. ${liczba(p.tn)})` : ''}</span></div></div>`;
     }
     if (!pos.length) h += `<div class="pusto" style="padding:14px">Jeszcze nic dziś nie dodano.</div>`;
     h += `</div>`;
@@ -347,7 +357,7 @@ async function zatwierdz() {
   if (!(k.posilki || []).some((p) => p.id === id)) {
     k.posilki = [...(k.posilki || []), { id, godzina: sz.godzina || stan.godzina, nazwa: sz.nazwa, opis: sz.opis, ...sz.suma,
       pewnosc: sz.pewnosc, zdjecia: sz.zdjecia || [] }];
-    k.suma = Object.fromEntries(['kcal', 'b', 'w', 't'].map((x) => [x, (k.suma?.[x] || 0) + (sz.suma[x] || 0)]));
+    k.suma = Object.fromEntries(['kcal', 'b', 'w', 't', 'tn'].map((x) => [x, (k.suma?.[x] || 0) + (sz.suma[x] || 0)]));
   }
   karty[d] = k;
   zamknijDodaj();
