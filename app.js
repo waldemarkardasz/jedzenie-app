@@ -106,14 +106,15 @@ function makro(nazwa, zj, cel, kolor, dopisek) {
     <div class="tor">${tor}</div>${pod}</div>`;
 }
 
-function nasycone(zj, limit) {
-  if (zj == null || !limit) return '';
+// Jeden pasek tłuszczu: nasycone z limitem. Nienasycone liczą się tylko do kalorii.
+function nasycone(zj, limit, ogolem) {
   const pct = zj / limit, ponad = pct > 1;
   const w = ponad ? Math.round(100 / pct) : Math.round(pct * 100);
-  return `<div class="makro" style="margin:-4px 0 0 14px;padding-left:12px;border-left:2px solid #2E3440;gap:6px">
-    <div class="rzad"><span style="font-size:12.5px;font-weight:600;color:#D5DAE1">w tym nasycone</span><span style="font-size:12.5px;font-weight:700">${liczba(zj)} <span>/ limit ${liczba(limit)} g</span></span></div>
-    <div class="tor" style="height:6px">${ponad ? `<div style="width:${w}%;background:#8E6A9A"></div><div style="width:${100 - w}%;background:#F07D6B"></div>` : `<div style="width:${w}%;background:#8E6A9A;border-radius:4px"></div>`}</div>
-    <span class="pod" style="color:${ponad ? '#F07D6B' : pct >= 0.8 ? '#E8A33D' : '#9BA3B0'}">${ponad ? `+${liczba(zj - limit)} g ponad limit` : `zostało ${liczba(limit - zj)} g do limitu`}</span></div>`;
+  const kol = '#C99BDB';
+  return `<div class="makro"><div class="rzad"><span class="nazwa">Tłuszcze nasycone</span><span class="wart">${liczba(zj)} <span>/ limit ${liczba(limit)} g</span></span></div>
+    <div class="tor">${ponad ? `<div style="width:${w}%;background:${kol}"></div><div style="width:${100 - w}%;background:#F07D6B"></div>` : `<div style="width:${w}%;background:${kol};border-radius:4px"></div>`}</div>
+    <span class="pod" style="color:${ponad ? '#F07D6B' : pct >= 0.8 ? '#E8A33D' : kol}">${ponad ? `+${liczba(zj - limit)} g ponad limit` : `zostało ${liczba(limit - zj)} g do limitu`}</span>
+    <span style="font-size:11px;color:#9BA3B0">tłuszcz ogółem: ${liczba(ogolem)} g · nienasycone liczą się tylko do kalorii</span></div>`;
 }
 
 function chipy(o) {
@@ -156,7 +157,7 @@ function rysujDzien(k, i, ile) {
   h += `<div class="kafel"><span class="et">Makroskładniki</span>
     ${makro('Białko', s.b, c.b, '#8FB8F0', `${(c.b / 79).toFixed(1).replace('.', ',')} g/kg`)}
     ${makro('Węglowodany', s.w, c.w, '#E8A33D')}
-    ${makro('Tłuszcz', s.t, c.t, '#C99BDB')}${nasycone(s.tn, c.tn)}</div>`;
+    ${s.tn != null && c.tn ? nasycone(s.tn, c.tn, s.t) : makro('Tłuszcz', s.t, c.t, '#C99BDB')}</div>`;
 
   // komentarz
   if (kom.komentarz) {
